@@ -58,11 +58,11 @@ public class TransactionService {
         Wallet wallet = walletRepository.findByUserId(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("Wallet not found"));
 
-        if (wallet.getBalance().compareTo(request.getAmount()) < 0) {
-            throw new RuntimeException("Insufficient funds");
-        }
-
         if (request.getType() == TransactionType.DEBIT) {
+
+            if (wallet.getBalance().compareTo(request.getAmount()) < 0) {
+                throw new RuntimeException("Insufficient funds");
+            }
 
             wallet.setBalance(
                     wallet.getBalance().subtract(request.getAmount())
@@ -84,7 +84,5 @@ public class TransactionService {
 
         return transactionRepository.save(transaction);
     }
-
-//        return null;
-    }
 }
+
