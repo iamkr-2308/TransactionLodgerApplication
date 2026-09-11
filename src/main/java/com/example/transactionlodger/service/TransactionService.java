@@ -32,6 +32,7 @@ package com.example.transactionlodger.service;
 
 import com.example.transactionlodger.dto.TransactionRequest;
 import com.example.transactionlodger.entity.Transaction;
+import com.example.transactionlodger.entity.TransactionType;
 import com.example.transactionlodger.repository.TransactionRepository;
 import com.example.transactionlodger.repository.WalletRepository;
 import org.springframework.stereotype.Service;
@@ -54,7 +55,6 @@ public class TransactionService {
     @Transactional
     public Transaction processTransaction(TransactionRequest request) {
 
-
         Wallet wallet = walletRepository.findByUserId(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("Wallet not found"));
 
@@ -62,8 +62,18 @@ public class TransactionService {
             throw new RuntimeException("Insufficient funds");
         }
 
-        wallet.setBalance(
-                wallet.getBalance().subtract(request.getAmount()));
+        if (request.getType() == TransactionType.DEBIT) {
+
+            wallet.setBalance(
+                    wallet.getBalance().subtract(request.getAmount())
+            );
+
+        } else if (request.getType() == TransactionType.CREDIT) {
+
+            wallet.setBalance(
+                    wallet.getBalance().add(request.getAmount())
+            );
+        }
 
         Transaction transaction = new Transaction(
                 request.getTransactionId(),
@@ -73,8 +83,8 @@ public class TransactionService {
         );
 
         return transactionRepository.save(transaction);
+    }
 
 //        return null;
     }
 }
-++
