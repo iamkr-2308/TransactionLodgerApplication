@@ -189,4 +189,186 @@ class TransactionServiceConcurrencyTest {
                 "Exactly 5 successful transactions should be stored"
         );
     }
-}
+
+    @Test
+    @DisplayName("Sends 3 identical transactionIDs simultaneously. Ensures the balance is only deducted once.")
+    void sendsThreeIdenticalTransactionsSimultaneously() throws Exception {
+
+        UUID transactionId =
+                UUID.fromString("33333333-3333-3333-3333-333333333333");
+
+        TransactionRequest request =
+                new TransactionRequest(
+                        transactionId,
+                        userId,
+                        new BigDecimal("250.00"),
+                        TransactionType.DEBIT
+                );
+
+        ExecutorService executor =
+                Executors.newFixedThreadPool(3);
+
+        CountDownLatch startSignal =
+                new CountDownLatch(1);
+
+        List<Future<Transaction>> futures =
+                new ArrayList<>();
+
+        for (int i = 0; i < 3; i++) {
+
+            futures.add(
+                    executor.submit(() -> {
+
+                        startSignal.await();
+
+                        return transactionService
+                                .processTransaction(request);
+                    })
+            );
+        }
+
+        startSignal.countDown();
+
+        int successfulRequests = 0;
+        int failedRequests = 0;
+
+        for (Future<Transaction> future : futures) {
+
+            try {
+
+                future.get();
+                successfulRequests++;
+
+            } catch (ExecutionException e) {
+
+                failedRequests++;
+            }
+        }
+        executor.shutdown();
+        executor.awaitTermination(5, TimeUnit.SECONDS);
+
+        Wallet wallet = walletRepository
+                .findWalletForRead(userId)
+                .orElseThrow();
+
+        long transactionCount =
+                transactionRepository.count();
+
+        System.out.println();
+        System.out.println("======================================================");
+        System.out.println("TEST RESULT: DUPLICATE TRANSACTION");
+        System.out.println("======================================================");
+
+        System.out.println(
+                "Successful requests: "
+                        + successfulRequests
+        );
+
+        System.out.println(
+                "Failed duplicate requests: "
+                        + failedRequests
+        );
+
+        System.out.println(
+                "Transactions stored in DB: "
+                        + transactionCount
+        );
+
+        System.out.println(
+                "Final balance: ₹"
+                        + wallet.getBalance()
+        );
+
+        System.out.println("======================================================");
+
+        assertEquals(
+                1,
+                successfulRequests,
+                "Exactly 1 duplicate request should succeed"
+        );
+
+        assertEquals(
+                2,
+                failedRequests,
+                "Exactly 2 duplicate requests should fail"
+        );
+
+        assertEquals(
+                new BigDecimal("750.00"),
+                wallet.getBalance(),
+                "Balance should be deducted only once"
+        );
+
+        assertEquals(
+                1,
+                transactionCount,
+                "Only 1 transaction should be stored"
+        );
+
+    }
+
+    @Test
+    @DisplayName("Processes a single valid debit transaction successfully.")
+    void processesSingleValidDebitTransactionSuccessfully() {
+
+        System.out.println();
+        System.out.println("======================================================");
+        System.out.println("TEST: SINGLE VALID DEBIT TRANSACTION");
+        System.out.println("======================================================");
+        System.out.println("Initial balance: ₹1000.00");
+        System.out.println("Transaction amount: ₹250.00");
+
+        UUID transactionId = UUID.randomUUID();
+
+        TransactionRequest request = new TransactionRequest(
+                transactionId,
+                userId,
+                new BigDecimal("250.00"),
+                TransactionType.DEBIT
+        );
+
+        Transaction transaction =
+                transactionService.processTransaction(request);
+
+        Wallet wallet = walletRepository
+                .findWalletForRead(userId)
+                .orElseThrow();
+
+        long transactionCount =
+                transactionRepository.count();
+
+        System.out.println(
+                "Transaction processed: "
+                        + transaction.getTransactionId()
+        );
+
+        System.out.println(
+                "Transactions stored in DB: "
+                        + transactionCount
+        );
+
+        System.out.println(
+                "Final balance: ₹"
+                        + wallet.getBalance()
+        );
+
+        System.out.println("======================================================");
+
+        assertNotNull(transaction);
+
+        assertEquals(
+                transactionId,
+                transaction.getTransactionId()
+        );
+
+        assertEquals(
+                new BigDecimal("750.00"),
+                wallet.getBalance()
+        );
+
+        assertEquals(
+                1,
+                transactionCount
+        );
+    }
+    }

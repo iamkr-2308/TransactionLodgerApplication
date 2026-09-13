@@ -33,6 +33,8 @@ package com.example.transactionlodger.service;
 import com.example.transactionlodger.dto.TransactionRequest;
 import com.example.transactionlodger.entity.Transaction;
 import com.example.transactionlodger.entity.TransactionType;
+import com.example.transactionlodger.exception.InsufficientFundsException;
+import com.example.transactionlodger.exception.WalletNotFoundException;
 import com.example.transactionlodger.repository.TransactionRepository;
 import com.example.transactionlodger.repository.WalletRepository;
 import org.springframework.stereotype.Service;
@@ -56,12 +58,12 @@ public class TransactionService {
     public Transaction processTransaction(TransactionRequest request) {
 
         Wallet wallet = walletRepository.findByUserId(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("Wallet not found"));
+                .orElseThrow(() -> new WalletNotFoundException("Wallet not found"));
 
         if (request.getType() == TransactionType.DEBIT) {
 
             if (wallet.getBalance().compareTo(request.getAmount()) < 0) {
-                throw new RuntimeException("Insufficient funds");
+                throw new InsufficientFundsException("Insufficient funds");
             }
 
             wallet.setBalance(

@@ -1,15 +1,25 @@
 package com.example.transactionlodger.dto;
 
 import com.example.transactionlodger.entity.TransactionType;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
 public class TransactionRequest {
 
+    @NotNull
     private UUID transactionId;
+
+    @NotNull
     private UUID userId;
+
+    @NotNull
+    @Positive
     private BigDecimal amount;
+
+    @NotNull
     private TransactionType type;
 
     public TransactionRequest() {

@@ -3,6 +3,7 @@ package com.example.transactionlodger.controller;
 import com.example.transactionlodger.dto.TransactionRequest;
 import com.example.transactionlodger.entity.Transaction;
 import com.example.transactionlodger.service.TransactionService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -16,7 +17,9 @@ public class TransactionController {
     }
 
     @PostMapping("/process")
-    public Transaction processTransaction(@RequestBody TransactionRequest request) {
+    public Transaction processTransaction(
+            @Valid @RequestBody TransactionRequest request) {
+
         return transactionService.processTransaction(request);
     }
 }

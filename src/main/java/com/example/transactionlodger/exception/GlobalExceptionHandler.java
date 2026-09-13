@@ -1,5 +1,6 @@
 package com.example.transactionlodger.exception;
 
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -15,5 +16,23 @@ public class GlobalExceptionHandler {
             DataIntegrityViolationException exception) {
 
         return "Transaction already exists";
+    }
+
+    @ExceptionHandler(WalletNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public String handleWalletNotFound(WalletNotFoundException exception) {
+        return exception.getMessage();
+    }
+
+    @ExceptionHandler(InsufficientFundsException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public String handleInsufficientFunds(InsufficientFundsException exception) {
+        return exception.getMessage();
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public String handleValidationError(MethodArgumentNotValidException exception) {
+        return "Invalid transaction request";
     }
 }
